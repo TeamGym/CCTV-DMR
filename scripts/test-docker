@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+docker build . -t cctv-dmr
+docker run --rm -itd -vdb:/usr/src/app/db -p8080:8080 --name=cctv-dmr-d cctv-dmr $@
