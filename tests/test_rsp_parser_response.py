@@ -31,7 +31,25 @@ testCases = [
             '\n',
         expectedState=ResponseParser.State.DONE,
         expectedProperties={
-            'SessionID': 0})
+            'SessionID': 0}),
+
+    TestCase(
+        message=
+            'S0 1\n' +
+            '323653906\n' +
+            '2,10,2,10,0.9,1,person\n' +
+            '12,20,12,20,0.8,1,person\n' +
+            '\n',
+        expectedState=ResponseParser.State.FAILED,
+        expectedProperties={}),
+
+    TestCase(
+        message=
+            'S0 2\n' +
+            '1,-1,1\n' +
+            '\n',
+        expectedState=ResponseParser.State.FAILED,
+        expectedData={})
 ]
 
 for i, testCase in enumerate(testCases):

@@ -1,3 +1,5 @@
+from enum import Enum
+
 class Request:
     def __init__(self, method, onResponseCallback=None, properties={}):
         self.__method = method
@@ -46,3 +48,8 @@ class Request:
 
     def addProperty(self, key, value):
         self.__properties[key] = value
+
+    class Method(Enum):
+        ATTACH = 1
+        JOIN = 2
+        CONTROL_AUDIO = 3

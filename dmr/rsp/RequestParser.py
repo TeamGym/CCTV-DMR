@@ -1,7 +1,6 @@
 from enum import Enum
 
 from .Request import Request
-from .RequestMethod import RequestMethod
 from .Rsp import Rsp
 
 class RequestParser:
@@ -48,8 +47,9 @@ class RequestParser:
                 return self.__returnState(RequestParser.State.FAILED_INVALID_PROTOCOL)
 
             methodType = None
+
             try:
-                methodType = RequestMethod[method]
+                methodType = Request.Method[method]
             except KeyError:
                 pass
 
@@ -64,6 +64,7 @@ class RequestParser:
                 return self.__returnState(RequestParser.State.FAILED)
 
             sequenceNumber = None
+
             try:
                 sequenceNumber = int(line[4:])
             except ValueError:
