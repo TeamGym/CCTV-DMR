@@ -1,25 +1,40 @@
 import logging
+import json
+from klein import Klein
 from twisted.internet import reactor
 from twisted.web.server import Site
 
 from dmr.classes import Singleton
-from dmr.utils import ConfigHelper
+from dmr.util import ConfigHelper
 
 l = logging.getLogger(__name__)
-settings = ConfigHelper().globalConfig.globalSettings
+config = ConfigHelper().globalConfig
+settings = config.globalSettings
 class WebServer(metaclass=Singleton):
     app = Klein()
 
     @app.route('/')
-    def root(self, request):
-        l.info('access to {}, from {}'.format(request.uri, request.getHost()))
-        return settings.to_json()
+    def root(self, request) -> str:
+        l.info('access {}, client: {}'.format(request.uri, request.getHost()))
 
-    def run(self):
-        l.info('Web server start on {}'.format(settings.webPort))
-        reactor.listenTCP(settings.webPort, Site(self.app.resource())
+        response = {
+                'httpPort': settings.httpPort,
+                'tcpPort': settings.tcpPort,
+                'cameraList': []}
 
-    def stop(self):
-        l.info('Web server stop')
+        for camConfig in config.cameraConfigs:
+            response['cameraList'].append({
+                'id': camConfig.camId,
+                'name': camConfig.name})
+
+        return json.dumps(response)
+
+    def run(self) -> None:
+        l.info('Web Server start on {}'.format(settings.httpPort))
+        reactor.listenTCP(settings.httpPort, Site(self.app.resource()))
+        reactor.run()
+
+    def stop(self) -> None:
+        l.info('Web Server stop')
         reactor.stop()
 

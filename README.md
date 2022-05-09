@@ -5,7 +5,6 @@
 ## 실행방법
 
 ### Docker를 이용한 실행
-
 ```
 ./scripts/test-docker
 ```

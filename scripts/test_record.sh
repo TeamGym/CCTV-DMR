@@ -1,0 +1,2 @@
+#!/bin/sh
+gst-launch-1.0 -v videotestsrc is-live=1 do-timestamp=1 ! video/x-raw,format=I420,width=640,height=480,framerate=30/1,stream-format=byte-stream ! timeoverlay halignment=right valignment=bottom text= "Stream time:" shaded-background=true font-desc="Sans, 24" ! x264enc tune=zerolatency speed-preset=ultrafast byte-stream=1 key-int-max=60 bitrate=3000 ! multiudpsink clients="$1,127.0.0.1:50500"

@@ -6,4 +6,4 @@ from dataclasses_json import dataclass_json
 class CameraConfig:
     camId: int
     name: str
-
+    udpPort: int
