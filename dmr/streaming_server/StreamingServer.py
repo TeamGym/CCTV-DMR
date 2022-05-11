@@ -3,7 +3,7 @@ from typing import Dict, Optional, Tuple
 from threading import Thread
 import gi
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib, GstRtspServer
+from gi.repository import Gst, GLib
 
 from dmr.util import ConfigHelper
 

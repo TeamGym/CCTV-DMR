@@ -1,18 +1,18 @@
 from enum import Enum
 
 class Stream:
-    def __init__(self, sessionID, streamType):
-        self.__sessionID = sessionID
+    def __init__(self, channel, streamType, data=None):
+        self.__channel = channel
         self.__streamType = streamType
-        self.__data = None
+        self.__data = data
 
     @property
-    def sessionID(self):
-        return self.__sessionID
+    def channel(self):
+        return self.__channel
 
-    @sessionID.setter
-    def sessionID(self, value):
-        self.__sessionID = value
+    @channel.setter
+    def channel(self, value):
+        self.__channel = value
 
     @property
     def data(self):
@@ -29,6 +29,13 @@ class Stream:
     @streamType.setter
     def streamType(self, value):
         self.__streamType = value
+
+    def getMessageString(self):
+        streamLine = 'S' + str(self.__channel) + ' ' + str(self.__streamType.value) + '\n'
+
+        return streamLine \
+                + self.__data.getMessageString() \
+                + '\n'
 
     class Type(Enum):
         DETECTION_RESULT = 1

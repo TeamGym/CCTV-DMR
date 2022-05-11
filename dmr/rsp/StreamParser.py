@@ -1,6 +1,6 @@
 from enum import Enum
 
-from dmr.rsp import Stream
+from .Stream import Stream
 from dmr.rsp.stream_data import DetectionResult
 from dmr.rsp.stream_data import ControlPTZ
 
@@ -42,16 +42,16 @@ class StreamParser:
 
             tokens = line.split(' ')
 
-            sessionID = None
+            channel = None
             streamTypeNumber = None
 
             try:
-                sessionID = int(tokens[0])
+                channel = int(tokens[0])
                 streamTypeNumber = int(tokens[1])
             except ValueError:
                 pass
 
-            if sessionID is None or streamTypeNumber is None:
+            if channel is None or streamTypeNumber is None:
                 return self.__returnState(StreamParser.State.FAILED)
 
             streamType = None
@@ -64,7 +64,7 @@ class StreamParser:
             if streamType is None:
                 return self.__returnState(StreamParser.State.FAILED_INVALID_TYPE)
 
-            self.__stream = Stream(sessionID, streamType)
+            self.__stream = Stream(channel, streamType)
 
             if Stream.Type.DETECTION_RESULT == streamType:
                 self.__state = StreamParser.State.DETECTION_RESULT_READY

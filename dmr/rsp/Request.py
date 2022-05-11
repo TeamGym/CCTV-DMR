@@ -1,5 +1,7 @@
 from enum import Enum
 
+from .Rsp import Rsp
+
 class Request:
     def __init__(self, method, onResponseCallback=None, properties={}):
         self.__method = method
@@ -49,7 +51,21 @@ class Request:
     def addProperty(self, key, value):
         self.__properties[key] = value
 
+    def getMessageString(self):
+        requestLine = self.__method.name + ' RSP/' + Rsp.VERSION + '\n'
+        sequenceLine = 'Seq=' + str(self.__sequence) + '\n'
+        propertyLines = []
+
+        for name, value in self.__properties.items():
+            propertyLines.append(name + '=' + value + '\n')
+
+        return requestLine \
+                + sequenceLine \
+                + ''.join(propertyLines) \
+                + '\n'
+
     class Method(Enum):
-        ATTACH = 1
-        JOIN = 2
-        CONTROL_AUDIO = 3
+        GET_INFO = 1
+        ATTACH = 2
+        JOIN = 3
+        CONTROL_AUDIO = 4

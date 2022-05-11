@@ -31,10 +31,10 @@ class ResponseParser:
                 line = line[:-1]
 
         if ResponseParser.State.READY == self.__state:
-            if line.count(' ') < 2:
+            if line.count(' ') != 1:
                 return self.__returnState(ResponseParser.State.FAILED)
 
-            protocol, statusCodeStr, statusMessage = line.split(' ', maxsplit=2)
+            protocol, statusCodeStr = line.split(' ')
 
             if protocol.count('/') != 1:
                 return self.__returnState(ResponseParser.State.FAILED_INVALID_PROTOCOL)
@@ -53,7 +53,7 @@ class ResponseParser:
             if statusCode is None:
                 return self.__returnState(ResponseParser.State.FAILED_INVALID_STATUS)
 
-            self.__response = Response(statusCode, statusMessage)
+            self.__response = Response(statusCode)
             self.__state = ResponseParser.State.PARSE_SEQUENCE
 
         elif ResponseParser.State.PARSE_SEQUENCE == self.__state:

@@ -2,13 +2,9 @@ import logging
 import socket
 from threading import Thread
 
-from multiprocessing import Queue
-
+from dmr.rsp import RspConnection, EndpointType, Request, Response, Stream
 from dmr.classes import Singleton
 from dmr.util import ConfigHelper
-
-from .SenderThread import SenderThread
-from .ReceiverThread import ReceiverThread
 
 l = logging.getLogger(__name__)
 config = ConfigHelper().globalConfig
@@ -17,11 +13,28 @@ class TcpRelayServer(metaclass=Singleton):
     def __init__(self):
         self.__thread = None
         self.__server = None
-
+        self.__running = True
         self.__clients = []
 
-        self.__sendMessageQueue = Queue()
-        self.__receiveMessageQueue = Queue()
+    def __onGetInfo(self, request, returnResponse):
+        response = Response(
+                statusCode=200,
+                statusMessage='OK')
+
+        response.addProperty('CamList',
+                ','.join([camera.camId for camera in config.cameraConfigs]))
+
+        for camera in config.cameraConfigs:
+            response.addProperty('Cam{}-Name'.format(camera.camId), camera.name)
+            response.addProperty('Cam{}-UdpPort'.format(camera.camId), str(camera.udpPort))
+
+        returnResponse(response)
+
+    def __onControlPTZ(self, stream):
+        print('control ptz: pan={}, tilt={}, zoom={}'.format(
+            stream.data.pan,
+            stream.data.tilt,
+            stream.data.zoom))
 
     def start(self):
         assert self.__thread is None
@@ -36,14 +49,17 @@ class TcpRelayServer(metaclass=Singleton):
         self.__server.listen(10)
         self.__server.setblocking(True)
 
-        while True:
+        while self.__running:
             (clientsocket, address) = self.__server.accept()
-            l.info('TCP Connection from {address}')
-            self.__clients.append(RspConnection(EndpointType.DMR, clientsocket))
+            l.info('TCP Connection from {}'.format(address))
+            self.__clients.append(RspConnection(
+                endpointType=EndpointType.DMR,
+                sock=clientsocket,
+                requestHandlers={
+                    Request.Method.GET_INFO: self.__onGetInfo}))
 
     def stop(self):
         l.info('TCP Server stop')
         self.__running = False
         self.__server.shutdown(socket.SHUT_RDWR) # not tested
         self.__server.close()
-
