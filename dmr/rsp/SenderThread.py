@@ -27,6 +27,10 @@ class SenderThread(Thread):
     def run(self):
         while True:
             message = self.__sendMessageQueue.get()
-            self.__sock.sendall(message.getMessageString().encode('utf-8'))
+            if message is None:
+                break
+            messageString = message.getMessageString()
+            l.debug('send message: \n{}'.format(messageString))
+            self.__sock.sendall(messageString.encode('utf-8'))
             if isinstance(message, Request):
                 self.__sentRequestDict[message.sequence] = message

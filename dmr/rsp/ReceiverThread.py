@@ -9,7 +9,7 @@ from .ResponseParser import ResponseParser
 
 l = logging.getLogger(__name__)
 class ReceiverThread(Thread):
-    def __init__(self, sock):
+    def __init__(self, sock, onDisconnected):
         super().__init__()
         self.__sock = sock
         self.__receiveMessageQueue = Queue()
@@ -17,6 +17,7 @@ class ReceiverThread(Thread):
                 StreamParser(),
                 RequestParser(),
                 ResponseParser()]
+        self.__onDisconnected = onDisconnected
 
     @property
     def receiveMessageQueue(self):
@@ -27,7 +28,13 @@ class ReceiverThread(Thread):
         parser = self.__parserList[0]
 
         while True:
-            buffer += self.__sock.recv(4096)
+            received = self.__sock.recv(4096)
+
+            if received == b'':
+                self.__onDisconnected()
+                return
+
+            buffer += received
 
             while b'\n' in buffer:
                 lineBytes, rest = buffer.split(b'\n', 1)
@@ -39,7 +46,7 @@ class ReceiverThread(Thread):
                     state, message = parser.parseLine(line)
 
                     if state == parser.State.DONE:
-                        l.debug('received message: \n\n{}'.format(message.getMessageString()))
+                        l.debug('received message: \n{}'.format(message.getMessageString()))
                         message.remoteAddress = self.__sock.getpeername()
                         self.__receiveMessageQueue.put(message)
                         parser.reset()

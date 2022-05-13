@@ -5,8 +5,8 @@ from threading import Condition
 from dmr.rsp import RspConnection, EndpointType, Request, Stream
 from dmr.rsp.stream_data import ControlPTZ
 
-#REMOTE=('192.168.141.10', 50002)
-REMOTE=('127.0.0.1', 50002)
+REMOTE=('192.168.1.29', 50002)
+#REMOTE=('127.0.0.1', 50002)
 
 exitCondition = Condition()
 
@@ -27,7 +27,7 @@ conn.sendRequest(Request(
 
 print('send stream')
 conn.sendStream(Stream(
-    sessionID=2,
+    channel=2,
     streamType=Stream.Type.CONTROL_PTZ,
     data=ControlPTZ(
         pan=3,

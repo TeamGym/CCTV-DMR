@@ -6,17 +6,20 @@
     {
       "camId": 0,
       "name": "Living Room",
-      "udpPort": 50501
+      "udpPort": 50501,
+      "channel": 50501
     },
     {
       "camId": 1,
       "name": "Frontyard",
-      "udpPort": 50502
+      "udpPort": 50502,
+      "channel": 50502
     },
     {
       "camId": 2,
       "name": "Backyard",
-      "udpPort": 50503
+      "udpPort": 50503,
+      "channel": 50503
     }
   ]
 }

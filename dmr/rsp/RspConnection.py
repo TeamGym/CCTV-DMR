@@ -14,12 +14,18 @@ class RspConnection:
             endpointType,
             sock,
             streamHandlers={},
-            requestHandlers={}):
+            requestHandlers={},
+            eventHandlers={}):
         self.__endpointType = endpointType
         self.__sock = sock
 
         self.__streamHandlers = streamHandlers
         self.__requestHandlers = requestHandlers
+
+        self.__eventHandlers = {
+                'Disconnected': [],
+                **eventHandlers
+                }
 
         self.__senderThread = None
         self.__receiverThread = None
@@ -56,6 +62,9 @@ class RspConnection:
         if stream.channel in self.__streamHandlers:
             self.__streamHandlers[stream.channel](stream)
 
+    def __onDisconnected(self):
+        self.__fireEvent('Disconnected', self.__sock.getpeername())
+
     # ----------------------------------------------------------------------
     # Public Method
     # ----------------------------------------------------------------------
@@ -83,6 +92,9 @@ class RspConnection:
     def addStreamHandler(self, channel, handler):
         self.__streamHandlers[channel] = handler
 
+    def addEventHandler(self, event, handler):
+        self.__eventHandlers[event].append(handler)
+
     def start(self):
         assert self.__senderThread is None and \
                 self.__receiverThread is None and \
@@ -93,7 +105,8 @@ class RspConnection:
         self.__senderThread.daemon = True
 
         self.__receiverThread = ReceiverThread(
-                sock=self.__sock)
+                sock=self.__sock,
+                onDisconnected=self.__onDisconnected)
         self.__receiverThread.daemon = True
 
         self.__messageEventThread = MessageEventThread(
@@ -107,7 +120,12 @@ class RspConnection:
         self.__receiverThread.start()
         self.__messageEventThread.start()
 
-        l.debug('Start Connection Threads')
+    def close(self):
+        l.debug('Close Connection remote={}'.format(self.__sock.getpeername()))
+        self.__sock.shutdown(socket.SHUT_RDWR)
+        self.__sock.close()
+        self.__senderThread.sendMessageQueue.put(None)
+        self.__receiverThread.receiveMessageQueue.put(None)
 
     # ----------------------------------------------------------------------
     # Class Method
@@ -118,8 +136,17 @@ class RspConnection:
             endpointType,
             remote,
             streamHandlers={},
-            requestHandlers={}):
+            requestHandlers={},
+            eventHandlers={}):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(remote)
 
-        return RspConnection(endpointType, sock, streamHandlers, requestHandlers)
+        conn = RspConnection(
+                endpointType,
+                sock,
+                streamHandlers,
+                requestHandlers,
+                eventHandlers)
+        conn.start()
+
+        return conn

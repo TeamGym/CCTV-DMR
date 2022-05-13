@@ -7,3 +7,4 @@ class CameraConfig:
     camId: int
     name: str
     udpPort: int
+    channel: int

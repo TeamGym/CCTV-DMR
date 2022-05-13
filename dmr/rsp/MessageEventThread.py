@@ -21,6 +21,8 @@ class MessageEventThread(Thread):
     def run(self):
         while True:
             message = self.__receiveMessageQueue.get()
+            if message is None:
+                break
 
             if isinstance(message, Stream):
                 self.__onStreamReceived(message)
