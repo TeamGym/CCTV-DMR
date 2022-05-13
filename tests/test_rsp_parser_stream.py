@@ -86,6 +86,8 @@ for i, testCase in enumerate(testCases):
     for line in testCase.message.splitlines():
         state, stream = parser.parseLine(line)
         print('Parse Line: {}\n  State: {}'.format(line, state))
+        if state == StreamParser.State.PARSE_DATA:
+            print('  Data Parser State: {}'.format(parser.dataParser.state))
 
         if parser.isTerminated():
             print('Parser Terminated')
@@ -98,7 +100,7 @@ for i, testCase in enumerate(testCases):
     if state == StreamParser.State.DONE:
         assert stream is not None
 
-        print('SessionID: {}'.format(stream.sessionID))
+        print('Channel: {}'.format(stream.channel))
         print('Stream-Type: {}'.format(stream.streamType))
 
         print('Stream-Data: {}'.format(stream.data))

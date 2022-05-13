@@ -8,6 +8,14 @@ class ResponseParser:
         self.__state = ResponseParser.State.READY
         self.__response = None
 
+    @property
+    def state(self):
+        return self.__state
+
+    @property
+    def response(self):
+        return self.__response
+
     def __returnState(self, state, response=None):
         self.__state = state
         return self.__state, response

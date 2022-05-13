@@ -3,15 +3,30 @@ from enum import Enum
 from .Stream import Stream
 from dmr.rsp.stream_data import DetectionResult
 from dmr.rsp.stream_data import ControlPTZ
+from dmr.rsp.stream_data import DetectionResultParser
+from dmr.rsp.stream_data import ControlPTZParser
 
 class StreamParser:
     def __init__(self):
         self.__state = StreamParser.State.READY
         self.__stream = None
+        self.__dataParser = None
 
-    def __returnState(self, state, request=None):
+    @property
+    def state(self):
+        return self.__state
+
+    @property
+    def stream(self):
+        return self.__stream
+
+    @property
+    def dataParser(self):
+        return self.__dataParser
+
+    def __returnState(self, state, stream=None):
         self.__state = state
-        return self.__state, request
+        return self.__state, stream
 
     def isTerminated(self):
         return self.__state.value >= 100
@@ -21,7 +36,8 @@ class StreamParser:
 
     def reset(self):
         self.__state = StreamParser.State.READY
-        self.__request = None
+        self.__stream = None
+        self.__dataParser = None
 
     def parseLine(self, line, keepends=False):
         assert not self.isTerminated()
@@ -66,96 +82,28 @@ class StreamParser:
 
             self.__stream = Stream(channel, streamType)
 
-            if Stream.Type.DETECTION_RESULT == streamType:
-                self.__state = StreamParser.State.DETECTION_RESULT_READY
-            elif Stream.Type.CONTROL_PTZ == streamType:
-                self.__state = StreamParser.State.CONTROL_PTZ_READY
+            if streamType == Stream.Type.DETECTION_RESULT:
+                self.__dataParser = DetectionResultParser()
+            elif streamType == Stream.Type.CONTROL_PTZ:
+                self.__dataParser = ControlPTZParser()
 
-        elif StreamParser.State.DETECTION_RESULT_READY == self.__state:
-            if line == '':
+            self.__state = StreamParser.State.PARSE_DATA
+
+        elif StreamParser.State.PARSE_DATA == self.__state:
+            state, data = self.__dataParser.parseLine(line)
+
+            if self.__dataParser.isFailed():
                 return self.__returnState(StreamParser.State.FAILED)
 
-            timestamp = None
-
-            try:
-                timestamp = int(line)
-            except ValueError:
-                pass
-
-            if timestamp is None:
-                return self.__returnState(StreamParser.State.FAILED)
-
-            self.__stream.data = DetectionResult(
-                    timestamp=timestamp,
-                    boxes=[])
-            self.__state = StreamParser.State.DETECTION_RESULT_READ_BOX
-
-        elif StreamParser.State.DETECTION_RESULT_READ_BOX == self.__state:
-            if line == '':
+            if state == self.__dataParser.State.DONE:
+                self.__stream.data = data
                 return self.__returnState(StreamParser.State.DONE, self.__stream)
-
-            tokens = line.split(',')
-
-            if len(tokens) != 7:
-                return self.__returnState(StreamParser.State.FAILED)
-
-            try:
-                left = int(tokens[0])
-                right = int(tokens[1])
-                top = int(tokens[2])
-                bottom = int(tokens[3])
-                confidence = float(tokens[4])
-                classID = int(tokens[5])
-                label = tokens[6]
-
-                self.__stream.data.boxes.append(
-                        DetectionResult.DetectionBox(
-                            left=left,
-                            right=right,
-                            top=top,
-                            bottom=bottom,
-                            confidence=confidence,
-                            classID=classID,
-                            label=label))
-            except ValueError:
-                return self.__returnState(StreamParser.State.FAILED)
-
-        elif StreamParser.State.CONTROL_PTZ_READY == self.__state:
-            if line == '':
-                return self.__returnState(StreamParser.State.FAILED)
-
-            tokens = line.split(',')
-
-            if len(tokens) != 3:
-                return self.__returnState(StreamParser.State.FAILED)
-
-            try:
-                pan = int(tokens[0])
-                tilt = int(tokens[1])
-                zoom = int(tokens[2])
-
-                self.__stream.data = ControlPTZ(
-                        pan=pan,
-                        tilt=tilt,
-                        zoom=zoom)
-                self.__state = StreamParser.State.CONTROL_PTZ_DONE
-            except ValueError:
-                return self.__returnState(StreamParser.State.FAILED)
-
-        elif StreamParser.State.CONTROL_PTZ_DONE == self.__state:
-            if line == '':
-                return self.__returnState(StreamParser.State.DONE, self.__stream)
-
-            return self.__returnState(StreamParser.State.FAILED)
 
         return self.__state, None
 
     class State(Enum):
         READY = 0
-        DETECTION_RESULT_READY = 10
-        DETECTION_RESULT_READ_BOX = 11
-        CONTROL_PTZ_READY = 20
-        CONTROL_PTZ_DONE = 21
+        PARSE_DATA = 1
         DONE = 100
         FAILED = 200
         FAILED_INVALID_TYPE = 201

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from dmr.classes import Singleton
+from .Singleton import Singleton
 from dmr.config import GlobalConfig
 
 class ConfigHelper(metaclass=Singleton):

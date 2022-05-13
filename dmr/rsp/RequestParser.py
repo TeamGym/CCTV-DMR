@@ -8,6 +8,14 @@ class RequestParser:
         self.__state = RequestParser.State.READY
         self.__request = None
 
+    @property
+    def state(self):
+        return self.__state
+
+    @property
+    def request(self):
+        return self.__request
+
     def __returnState(self, state, request=None):
         self.__state = state
         return self.__state, request
