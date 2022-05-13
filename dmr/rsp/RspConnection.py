@@ -53,8 +53,8 @@ class RspConnection:
                     lambda response: self.sendResponse(response, request))
 
     def __onStreamReceived(self, stream):
-        if stream.streamType in self.__streamHandlers:
-            self.__streamHandlers[stream.streamType](stream)
+        if stream.channel in self.__streamHandlers:
+            self.__streamHandlers[stream.channel](stream)
 
     # ----------------------------------------------------------------------
     # Public Method
@@ -80,8 +80,8 @@ class RspConnection:
     def addRequestHandler(self, method, handler):
         self.__requestHandlers[method] = handler
 
-    def addStreamHandler(self, streamType, handler):
-        self.__streamHandlers[streamType] = handler
+    def addStreamHandler(self, channel, handler):
+        self.__streamHandlers[channel] = handler
 
     def start(self):
         assert self.__senderThread is None and \

@@ -15,20 +15,18 @@ PORT = 54323
 
 messages = [
         Request(
-            method=Request.Method.ATTACH,
+            method=Request.Method.JOIN,
             properties={
-                'SessionID': '0',
-                'Width': '640',
-                'Height': '480'}),
+                'CamId': '0',
+                'Port': '50605'}),
 
-        Response(
-            statusCode=200,
-            statusMessage='OK yes',
-            properties={
-                'SessionID': '0'}),
+       # Response(
+       #     statusCode=200,
+       #     properties={
+       #         'SessionID': '0'}),
 
         Stream(
-            sessionID='0',
+            channel='20',
             streamType=Stream.Type.DETECTION_RESULT,
             data=DetectionResult(
             timestamp=323653906,
@@ -51,7 +49,7 @@ messages = [
                     label='person')])),
 
         Stream(
-            sessionID='0',
+            channel='21',
             streamType=Stream.Type.CONTROL_PTZ,
             data=ControlPTZ(
                 pan=1,
@@ -59,17 +57,17 @@ messages = [
                 zoom=1))
 ]
 
-def serverRequestReceived(request, returnResponse):
+def serverOnJoin(request, returnResponse):
     print('server: request received')
     print('server: method: {}'.format(request.Method))
     returnResponse(Response(
             statusCode=200,
-            statusMessage='OK from server',
             properties={
                 'SessionID': '0'}))
 
 def serverStreamReceived(stream):
     print('server: stream received')
+    print('server: stream channel: {}'.format(stream.channel))
     print('server: stream type: {}'.format(stream.streamType))
 
 def runServer():
@@ -80,19 +78,10 @@ def runServer():
 
     (client, address) = server.accept()
     conn = RspConnection(EndpointType.DMR, client)
-    conn.addEventHandler('RequestReceived', serverRequestReceived)
-    conn.addEventHandler('StreamReceived', serverStreamReceived)
-
-
-def clientRequestReceived(request, returnResponse):
-    print('client: request received')
-    print('client: request: \n{}'.format(request.getMessageString()))
-
-    returnResponse(Response(
-            statusCode=200,
-            statusMessage='OK from client',
-            properties={
-                'SessionID': '0'}))
+    conn.addRequestHandler(Request.Method.JOIN, serverOnJoin)
+    conn.addStreamHandler(20, serverStreamReceived)
+    conn.addStreamHandler(21, serverStreamReceived)
+    conn.start()
 
 def clientStreamReceived(stream):
     print('client: stream received')
@@ -104,28 +93,27 @@ serverThread = threading.Thread(target=runServer)
 serverThread.daemon = True
 serverThread.start()
 
-conn = RspConnection.makeConnection(EndpointType.APP, ('127.0.0.1', PORT))
-conn.addEventHandler('RequestReceived', clientRequestReceived)
-conn.addEventHandler('StreamReceived', clientStreamReceived)
-
 time.sleep(1)
+
+conn = RspConnection.makeConnection(EndpointType.APP, ('127.0.0.1', PORT))
+conn.addStreamHandler(21, clientStreamReceived)
+conn.start()
 
 def onResponse(response):
     print('client: response received')
     print('client: statusCode: {}'.format(response.statusCode))
 
 print('client: add request')
-conn.addRequest(
+conn.sendRequest(
         Request(
-            method=Request.Method.ATTACH,
+            method=Request.Method.JOIN,
             properties={
-                'SessionID': '0',
-                'Width': '640',
-                'Height': '480'},
+                'CamId': '0',
+                'Port': '50605'},
             onResponseCallback=onResponse))
 
-conn.addStream(Stream(
-            sessionID='0',
+conn.sendStream(Stream(
+            channel=20,
             streamType=Stream.Type.DETECTION_RESULT,
             data=DetectionResult(
             timestamp=323653906,
@@ -147,5 +135,13 @@ conn.addStream(Stream(
                     classID=1,
                     label='person')])))
 
+
+conn.sendStream(Stream(
+            channel=21,
+            streamType=Stream.Type.CONTROL_PTZ,
+            data=ControlPTZ(
+                pan=1,
+                tilt=-1,
+                zoom=1)))
 
 time.sleep(10)

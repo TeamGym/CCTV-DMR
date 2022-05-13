@@ -36,7 +36,7 @@ testCases = [
 
     TestCase(
         message=
-            'S0 1\n' +
+            'S20 1\n' +
             '323653906\n' +
             '2,10,2,10,0.9,1,person\n' +
             '12,20,12,20,0.8,1,person\n' +
@@ -64,7 +64,7 @@ testCases = [
 
     TestCase(
         message=
-            'S0 2\n' +
+            'S21 2\n' +
             '1,-1,1\n' +
             '\n',
         expectedState=StreamParser.State.DONE,

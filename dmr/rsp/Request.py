@@ -75,6 +75,5 @@ class Request:
 
     class Method(Enum):
         GET_INFO = 1
-        ATTACH = 2
-        JOIN = 3
-        CONTROL_AUDIO = 4
+        JOIN = 2
+        CONTROL_AUDIO = 3
