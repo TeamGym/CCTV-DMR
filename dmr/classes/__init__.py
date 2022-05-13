@@ -1,2 +1,0 @@
-from .Singleton import Singleton
-

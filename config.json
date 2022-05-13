@@ -1,7 +1,6 @@
 {
   "globalSettings": {
-    "httpPort": 8080,
-    "tcpPort": 50002
+    "serverPort": 50002
   },
   "cameraConfigs": [
     {

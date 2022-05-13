@@ -40,6 +40,7 @@ class ReceiverThread(Thread):
 
                     if state == parser.State.DONE:
                         l.debug('received message: \n\n{}'.format(message.getMessageString()))
+                        message.remoteAddress = self.__sock.getpeername()
                         self.__receiveMessageQueue.put(message)
                         parser.reset()
 

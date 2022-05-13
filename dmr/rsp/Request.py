@@ -9,6 +9,7 @@ class Request:
         self.__onResponseCallback = onResponseCallback
         self.__properties = properties
         self.__sequence = 0
+        self.__remoteAddress = None
 
     @property
     def delivered(self):
@@ -41,6 +42,14 @@ class Request:
     @sequence.setter
     def sequence(self, value):
         self.__sequence = value
+
+    @property
+    def remoteAddress(self):
+        return self.__remoteAddress
+
+    @remoteAddress.setter
+    def remoteAddress(self, value):
+        self.__remoteAddress = value
 
     def getProperties(self):
         return self.__properties.keys()

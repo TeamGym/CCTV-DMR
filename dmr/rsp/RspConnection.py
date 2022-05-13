@@ -27,33 +27,21 @@ class RspConnection:
 
         self.__sequenceCount = 0
 
-        self.start()
+    # ----------------------------------------------------------------------
+    # Property
+    # ----------------------------------------------------------------------
 
-    @classmethod
-    def makeConnection(cls,
-            endpointType,
-            remote,
-            streamHandlers={},
-            requestHandlers={}):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(remote)
+    @property
+    def endpointType(self):
+        return self.__endpointType
 
-        return RspConnection(endpointType, sock, streamHandlers, requestHandlers)
+    @property
+    def sock(self):
+        return self.__sock
 
-    def sendRequest(self, request):
-        request.sequence = self.__sequenceCount
-        self.__sequenceCount = (self.__sequenceCount + 1) % 2**32
-        self.__senderThread.sendMessageQueue.put(request)
-
-    def sendResponse(self, response, requestReceived):
-        assert not requestReceived.delivered
-
-        requestReceived.delivered = True
-        response.sequence = requestReceived.sequence
-        self.__senderThread.sendMessageQueue.put(response)
-
-    def sendStream(self, stream):
-        self.__senderThread.sendMessageQueue.put(stream)
+    # ----------------------------------------------------------------------
+    # Private Method
+    # ----------------------------------------------------------------------
 
     def __fireEvent(self, event, *args):
         for handler in self.__eventHandlers[event]:
@@ -67,6 +55,27 @@ class RspConnection:
     def __onStreamReceived(self, stream):
         if stream.streamType in self.__streamHandlers:
             self.__streamHandlers[stream.streamType](stream)
+
+    # ----------------------------------------------------------------------
+    # Public Method
+    # ----------------------------------------------------------------------
+
+    def sendRequest(self, request):
+        request.sequence = self.__sequenceCount
+        self.__sequenceCount = (self.__sequenceCount + 1) % 2**32
+
+        self.__senderThread.sendMessageQueue.put(request)
+
+    def sendResponse(self, response, requestReceived):
+        assert not requestReceived.delivered
+
+        requestReceived.delivered = True
+        response.sequence = requestReceived.sequence
+
+        self.__senderThread.sendMessageQueue.put(response)
+
+    def sendStream(self, stream):
+        self.__senderThread.sendMessageQueue.put(stream)
 
     def addRequestHandler(self, method, handler):
         self.__requestHandlers[method] = handler
@@ -98,6 +107,19 @@ class RspConnection:
         self.__receiverThread.start()
         self.__messageEventThread.start()
 
-        l.debug('Start Connection')
+        l.debug('Start Connection Threads')
 
-        # TODO: RSP Handshake
+    # ----------------------------------------------------------------------
+    # Class Method
+    # ----------------------------------------------------------------------
+
+    @classmethod
+    def makeConnection(cls,
+            endpointType,
+            remote,
+            streamHandlers={},
+            requestHandlers={}):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(remote)
+
+        return RspConnection(endpointType, sock, streamHandlers, requestHandlers)
