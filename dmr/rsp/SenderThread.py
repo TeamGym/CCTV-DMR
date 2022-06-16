@@ -13,12 +13,12 @@ class SenderThread(Thread):
     def __init__(self, sock):
         super().__init__()
         self.__sock = sock
-        self.__sendMessageQueue = Queue()
+        self.__messageQueue = Queue()
         self.__sentRequestDict = {}
 
     @property
-    def sendMessageQueue(self):
-        return self.__sendMessageQueue
+    def messageQueue(self):
+        return self.__messageQueue
 
     @property
     def sentRequestDict(self):
@@ -26,7 +26,7 @@ class SenderThread(Thread):
 
     def run(self):
         while True:
-            message = self.__sendMessageQueue.get()
+            message = self.__messageQueue.get()
             if message is None:
                 break
             messageString = message.getMessageString()

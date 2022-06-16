@@ -6,6 +6,7 @@ class Stream:
         self.__streamType = streamType
         self.__data = data
         self.__remoteAddress = None
+        self.__connection = None
 
     @property
     def channel(self):
@@ -38,6 +39,14 @@ class Stream:
     @remoteAddress.setter
     def remoteAddress(self, value):
         self.__remoteAddress = value
+
+    @property
+    def connection(self):
+        return self.__connection
+
+    @connection.setter
+    def connection(self, value):
+        self.__connection = value
 
     def getMessageString(self):
         streamLine = 'S' + str(self.__channel) + ' ' + str(self.__streamType.value) + '\n'

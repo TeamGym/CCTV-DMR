@@ -1,25 +1,35 @@
 {
   "globalSettings": {
-    "serverPort": 50002
+    "serverPort": 50002,
+    "tunnelKeepAliveMaxInterval": 10.0
   },
   "cameraConfigs": [
     {
       "camId": 0,
       "name": "Living Room",
-      "udpPort": 50501,
-      "channel": 50501
+      "videoPort": 50501,
+      "audioInPort": 50502,
+      "audioOutPort": 50503,
+      "inChannel": 50511,
+      "outChannel": 50512
     },
     {
       "camId": 1,
       "name": "Frontyard",
-      "udpPort": 50502,
-      "channel": 50502
+      "videoPort": 50521,
+      "audioInPort": 50522,
+      "audioOutPort": 50523,
+      "inChannel": 50521,
+      "outChannel": 50522
     },
     {
       "camId": 2,
       "name": "Backyard",
-      "udpPort": 50503,
-      "channel": 50503
+      "videoPort": 50531,
+      "audioInPort": 50532,
+      "audioOutPort": 50533,
+      "inChannel": 50531,
+      "outChannel": 50532
     }
   ]
 }

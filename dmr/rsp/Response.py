@@ -1,11 +1,12 @@
 from .Rsp import Rsp
 
 class Response:
-    def __init__(self, statusCode, properties={}):
+    def __init__(self, statusCode, properties=None):
         self.__statusCode = statusCode
-        self.__properties = properties
+        self.__properties = properties or {}
         self.__sequence = 0
         self.__remoteAddress = None
+        self.__connection = None
 
     @property
     def statusCode(self):
@@ -30,6 +31,14 @@ class Response:
     @remoteAddress.setter
     def remoteAddress(self, value):
         self.__remoteAddress = value
+
+    @property
+    def connection(self):
+        return self.__connection
+
+    @connection.setter
+    def connection(self, value):
+        self.__connection = value
 
     def getProperties(self):
         return self.__properties.keys()

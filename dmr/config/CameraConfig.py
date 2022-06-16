@@ -6,5 +6,8 @@ from dataclasses_json import dataclass_json
 class CameraConfig:
     camId: int
     name: str
-    udpPort: int
-    channel: int
+    videoPort: int
+    audioInPort: int
+    audioOutPort: int
+    inChannel: int
+    outChannel: int

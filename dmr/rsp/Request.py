@@ -3,13 +3,14 @@ from enum import Enum
 from .Rsp import Rsp
 
 class Request:
-    def __init__(self, method, onResponseCallback=None, properties={}):
+    def __init__(self, method, onResponseCallback=None, properties=None):
         self.__method = method
         self.__delivered = False
         self.__onResponseCallback = onResponseCallback
-        self.__properties = properties
+        self.__properties = properties or {}
         self.__sequence = 0
         self.__remoteAddress = None
+        self.__connection = None
 
     @property
     def delivered(self):
@@ -51,6 +52,14 @@ class Request:
     def remoteAddress(self, value):
         self.__remoteAddress = value
 
+    @property
+    def connection(self):
+        return self.__connection
+
+    @connection.setter
+    def connection(self, value):
+        self.__connection = value
+
     def getProperties(self):
         return self.__properties.keys()
 
@@ -75,5 +84,8 @@ class Request:
 
     class Method(Enum):
         GET_INFO = 1
-        JOIN = 2
-        CONTROL_AUDIO = 3
+        OPEN_TUNNEL = 2
+        JOIN = 3
+        LEAVE = 4
+        KEEP_ALIVE = 5
+        CONTROL_AUDIO = 6

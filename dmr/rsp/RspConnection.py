@@ -1,6 +1,6 @@
 import logging
 import socket
-from threading import Thread
+from threading import Thread, RLock
 from queue import Queue
 
 from .EndpointType import EndpointType
@@ -13,23 +13,25 @@ class RspConnection:
     def __init__(self,
             endpointType,
             sock,
-            streamHandlers={},
-            requestHandlers={},
-            eventHandlers={}):
+            streamHandlers=None,
+            requestHandlers=None,
+            eventHandlers=None):
         self.__endpointType = endpointType
         self.__sock = sock
 
-        self.__streamHandlers = streamHandlers
-        self.__requestHandlers = requestHandlers
+        self.__streamHandlers = streamHandlers or {}
+        self.__requestHandlers = requestHandlers or {}
 
         self.__eventHandlers = {
                 'Disconnected': [],
-                **eventHandlers
+                **(eventHandlers or {})
                 }
 
         self.__senderThread = None
         self.__receiverThread = None
         self.__messageEventThread = None
+
+        self.__eventLock = RLock()
 
         self.__sequenceCount = 0
 
@@ -50,17 +52,22 @@ class RspConnection:
     # ----------------------------------------------------------------------
 
     def __fireEvent(self, event, *args):
-        for handler in self.__eventHandlers[event]:
-            handler(*args)
+        with self.__eventLock:
+            for handler in self.__eventHandlers[event]:
+                handler(*args)
 
     def __onRequestReceived(self, request):
-        if request.method in self.__requestHandlers:
-            self.__requestHandlers[request.method](request,
-                    lambda response: self.sendResponse(response, request))
+        with self.__eventLock:
+            if request.method in self.__requestHandlers:
+                self.__requestHandlers[request.method](request,
+                        lambda response: self.sendResponse(response, request))
 
     def __onStreamReceived(self, stream):
-        if stream.channel in self.__streamHandlers:
-            self.__streamHandlers[stream.channel](stream)
+        with self.__eventLock:
+            if stream.channel in self.__streamHandlers:
+                self.__streamHandlers[stream.channel](stream)
+            if 0 in self.__streamHandlers:
+                self.__streamHandlers[0](stream)
 
     def __onDisconnected(self):
         self.__fireEvent('Disconnected', self.__sock.getpeername())
@@ -70,10 +77,11 @@ class RspConnection:
     # ----------------------------------------------------------------------
 
     def sendRequest(self, request):
+        request.connection = self
         request.sequence = self.__sequenceCount
         self.__sequenceCount = (self.__sequenceCount + 1) % 2**32
 
-        self.__senderThread.sendMessageQueue.put(request)
+        self.__senderThread.messageQueue.put(request)
 
     def sendResponse(self, response, requestReceived):
         assert not requestReceived.delivered
@@ -81,19 +89,38 @@ class RspConnection:
         requestReceived.delivered = True
         response.sequence = requestReceived.sequence
 
-        self.__senderThread.sendMessageQueue.put(response)
+        response.connection = self
+
+        self.__senderThread.messageQueue.put(response)
 
     def sendStream(self, stream):
-        self.__senderThread.sendMessageQueue.put(stream)
+        stream.connection = self
+
+        self.__senderThread.messageQueue.put(stream)
 
     def addRequestHandler(self, method, handler):
-        self.__requestHandlers[method] = handler
+        with self.__eventLock:
+            self.__requestHandlers[method] = handler
 
     def addStreamHandler(self, channel, handler):
-        self.__streamHandlers[channel] = handler
+        with self.__eventLock:
+            self.__streamHandlers[channel] = handler
 
     def addEventHandler(self, event, handler):
-        self.__eventHandlers[event].append(handler)
+        with self.__eventLock:
+            self.__eventHandlers[event].append(handler)
+
+    def removeRequestHandler(self, method):
+        with self.__eventLock:
+            del self.__requestHandlers[method]
+
+    def removeStreamHandler(self, channel):
+        with self.__eventLock:
+            del self.__streamHandlers[channel]
+
+    def removeEventHandler(self, event, handler):
+        with self.__eventLock:
+            self.__eventHandlers[event].remove(handler)
 
     def start(self):
         assert self.__senderThread is None and \
@@ -110,7 +137,8 @@ class RspConnection:
         self.__receiverThread.daemon = True
 
         self.__messageEventThread = MessageEventThread(
-                receiveMessageQueue=self.__receiverThread.receiveMessageQueue,
+                connection=self,
+                receivedMessageQueue=self.__receiverThread.receivedMessageQueue,
                 sentRequestDict=self.__senderThread.sentRequestDict,
                 onRequestReceived=self.__onRequestReceived,
                 onStreamReceived=self.__onStreamReceived)
@@ -124,8 +152,8 @@ class RspConnection:
         l.debug('Close Connection remote={}'.format(self.__sock.getpeername()))
         self.__sock.shutdown(socket.SHUT_RDWR)
         self.__sock.close()
-        self.__senderThread.sendMessageQueue.put(None)
-        self.__receiverThread.receiveMessageQueue.put(None)
+        self.__senderThread.messageQueue.put(None)
+        self.__receiverThread.receivedMessageQueue.put(None)
 
     # ----------------------------------------------------------------------
     # Class Method
@@ -135,9 +163,9 @@ class RspConnection:
     def makeConnection(cls,
             endpointType,
             remote,
-            streamHandlers={},
-            requestHandlers={},
-            eventHandlers={}):
+            streamHandlers=None,
+            requestHandlers=None,
+            eventHandlers=None):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(remote)
 

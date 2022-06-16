@@ -12,7 +12,7 @@ class ReceiverThread(Thread):
     def __init__(self, sock, onDisconnected):
         super().__init__()
         self.__sock = sock
-        self.__receiveMessageQueue = Queue()
+        self.__receivedMessageQueue = Queue()
         self.__parserList = [
                 StreamParser(),
                 RequestParser(),
@@ -20,8 +20,8 @@ class ReceiverThread(Thread):
         self.__onDisconnected = onDisconnected
 
     @property
-    def receiveMessageQueue(self):
-        return self.__receiveMessageQueue
+    def receivedMessageQueue(self):
+        return self.__receivedMessageQueue
 
     def run(self):
         buffer = bytes(0)
@@ -48,7 +48,7 @@ class ReceiverThread(Thread):
                     if state == parser.State.DONE:
                         l.debug('received message: \n{}'.format(message.getMessageString()))
                         message.remoteAddress = self.__sock.getpeername()
-                        self.__receiveMessageQueue.put(message)
+                        self.__receivedMessageQueue.put(message)
                         parser.reset()
 
                     if not parser.isFailed():
